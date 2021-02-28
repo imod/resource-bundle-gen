@@ -62,7 +62,7 @@ Will generate this:
 public class ApplicationMessages {
 
 	private static final class Holder {
-		private static final String BUNDLE_NAME = "ch.fortysix.test.newbundle";
+		private static final String BUNDLE_NAME = "ch.fortysix.test.messages";
 		private Map<Locale, ResourceBundle> bundles = new ConcurrentHashMap<>();
 
 		public ResourceBundle getBundle(Locale locale) {
@@ -70,24 +70,20 @@ public class ApplicationMessages {
 		}
 	}
 
-	private Holder holder = new Holder();
-
-    public java.lang.String anotherkey(Locale locale) {
-		return holder.getBundle(locale).getString("anotherkey");
-    }
-
-    public java.lang.String keyWithDots(Locale locale, String arg1) {
-		String messagePattern = holder.getBundle(locale).getString("key.with.dots");
-		return MessageFormat.format(messagePattern, arg1);
-    }
+    private Holder holder = new Holder();
 
     public java.lang.String somekey(Locale locale) {
 		return holder.getBundle(locale).getString("somekey");
     }
 
-    public java.lang.String keyWithUnderlines(Locale locale, String arg1, String arg2, String arg3) {
-		String messagePattern = holder.getBundle(locale).getString("key_with_underlines");
-		return MessageFormat.format(messagePattern, arg1, arg2, arg3);
+    public java.lang.String sayHi(Locale locale, String arg1) {
+		String messagePattern = holder.getBundle(locale).getString("say.hi");
+		return MessageFormat.format(messagePattern, arg1);
+    }
+
+    public java.lang.String sayBy(Locale locale, String arg1, String arg2) {
+		String messagePattern = holder.getBundle(locale).getString("say_by");
+		return MessageFormat.format(messagePattern, arg1, arg2);
     }
 
 }
