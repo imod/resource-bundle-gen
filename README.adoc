@@ -1,0 +1,123 @@
+# ResourceBundle Generator
+
+ResourceBundle Generator is a small Java Annotation Processor (JSR-269) generating a class to ease the access to java resource bundles.
+
+## What does it do?
+
+The generator will read generate a class with a method for each key in the given resource bundle (the default bundle). If the message is a `java.text.MessageFormat`, the method will have arguments to pass the values for the format.
+
+e.g. `say.hi=Hello {0} {1}` will generate the following method signature:
+
+```
+public String sayHi(Locale locale, String arg0, String arg1)
+```
+
+## Named arguments
+
+The type field of the `@ResourceBundle`-annotation can be used to instruct the generator to support named arguments.
+
+e.g.
+
+Annotation: `@ResourceBundle(bundle = "mybundle", type = COMMONS_TEXT)`
+
+Bundle content: `say.by=By {firstName} {lastName}`
+
+will generate the following method signature:
+
+```
+public String sayBy(Locale locale, String firstName, String lastName)
+```
+
+In this case, the generated class will depend on `org.apache.commons.text.StringSubstitutor` of `commons-text`, therefore you need to add the following dependency to you project:
+
+```
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-text</artifactId>
+			<version>1.9</version>
+		</dependency>
+```
+
+## Example
+
+Take the following resource bundle file:
+
+```
+somekey=Some text
+say.hi=Hello {0}
+say_by=By {0} {1}
+```
+
+Annotating a class with `@ResourceBundle` e.g.:
+
+```
+@ResourceBundle(bundle = "ch.fortysix.test.messages", suffix = "Messages")
+public class Application {
+}
+```
+
+Will generate this:
+
+```
+public class ApplicationMessages {
+
+	private static final class Holder {
+		private static final String BUNDLE_NAME = "ch.fortysix.test.newbundle";
+		private Map<Locale, ResourceBundle> bundles = new ConcurrentHashMap<>();
+
+		public ResourceBundle getBundle(Locale locale) {
+			return bundles.computeIfAbsent(locale, l -> ResourceBundle.getBundle(BUNDLE_NAME, l));
+		}
+	}
+
+	private Holder holder = new Holder();
+
+    public java.lang.String anotherkey(Locale locale) {
+		return holder.getBundle(locale).getString("anotherkey");
+    }
+
+    public java.lang.String keyWithDots(Locale locale, String arg1) {
+		String messagePattern = holder.getBundle(locale).getString("key.with.dots");
+		return MessageFormat.format(messagePattern, arg1);
+    }
+
+    public java.lang.String somekey(Locale locale) {
+		return holder.getBundle(locale).getString("somekey");
+    }
+
+    public java.lang.String keyWithUnderlines(Locale locale, String arg1, String arg2, String arg3) {
+		String messagePattern = holder.getBundle(locale).getString("key_with_underlines");
+		return MessageFormat.format(messagePattern, arg1, arg2, arg3);
+    }
+
+}
+```
+
+## Maven
+
+To make the annotation processor work, you need to include it in your compiler configuration:
+
+```
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven-compiler-plugin.version}</version>
+				<configuration>
+					<source>${jdk.version}</source>
+					<target>${jdk.version}</target>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>ch.fortysix</groupId>
+							<artifactId>resource-bundle-processor</artifactId>
+							<version>${project.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+```
+
+Limitations:
+
+- The current version requires the default bundle to include all the messages,
+all methods will be generated out of the entries of the default bundle.
+- The current version only supports resource bundles in the form of properties files (no XML!).
