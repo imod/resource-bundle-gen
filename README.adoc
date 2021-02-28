@@ -12,6 +12,11 @@ e.g. `say.hi=Hello {0} {1}` will generate the following method signature:
 public String sayHi(Locale locale, String arg0, String arg1)
 ```
 
+## Why
+
+- no message/bundle keys distributed all over the source code.
+- have the compiler check the number of arguments passed to `MessageFormat.format(..)`
+
 ## Named arguments
 
 The type field of the `@ResourceBundle`-annotation can be used to instruct the generator to support named arguments.
