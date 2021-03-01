@@ -117,9 +117,13 @@ To make the annotation processor work, you need to include it in your compiler c
 			</plugin>
 ```
 
-## Limitations:
+## Limitations
 
 - A annotation processor is only  triggered in case a java file changes, but the resource bundles actually are `properties`-files (XML is currenlty not supported), therefore a compilation of the java class annotated with `@ResourceBundle` might need to be triggered in case the bunlde file changes. e.g. `mvn clean verify`
 - The current version requires the default bundle to include all the messages,
 all methods will be generated out of the entries of the default bundle.
 - The current version only supports resource bundles in the form of properties files (no XML!).
+
+## Alternatives
+
+- http://cal10n.qos.ch Compiler Assisted Localization, abbreviated as CAL10N (pronounced as "calion") is a java library for writing localized (internationalized) messages using resource bundles you are already familiar with, but with much greater comfort.

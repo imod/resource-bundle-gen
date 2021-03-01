@@ -14,7 +14,7 @@ class ServiceBundleTest {
 
 	@Test
 	void testWithTwoArgument() {
-		assertEquals("Hello Hans Muster", bundle.sayBy(Locale.ENGLISH, "Hans", "Muster"));
+		assertEquals("By Hans Muster", bundle.sayBy(Locale.ENGLISH, "Hans", "Muster"));
 	}
 
 	@Test
