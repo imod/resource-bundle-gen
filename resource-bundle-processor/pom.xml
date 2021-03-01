@@ -22,11 +22,6 @@
 			<artifactId>commons-text</artifactId>
 			<version>1.9</version>
 		</dependency>
-		<dependency>
-			<groupId>ch.fortysix</groupId>
-			<artifactId>message-bundle-annotations</artifactId>
-			<version>${project.version}</version>
-		</dependency>
 	</dependencies>
 
 	<build>
