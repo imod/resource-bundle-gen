@@ -127,3 +127,5 @@ all methods will be generated out of the entries of the default bundle.
 ## Alternatives
 
 - http://cal10n.qos.ch Compiler Assisted Localization, abbreviated as CAL10N (pronounced as "calion") is a java library for writing localized (internationalized) messages using resource bundles you are already familiar with, but with much greater comfort.
+
+## build
