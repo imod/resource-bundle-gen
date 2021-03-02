@@ -7,16 +7,49 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>Resource Bundle Generator</name>
-	<modules>
-		<module>resource-bundle-processor</module>
-		<module>resource-bundle-test</module>
-	</modules>
+	<description>ResourceBundle Generator is a small Java Annotation Processor (JSR-269) generating a class to ease the access to java resource bundles.</description>
+	<url>https://github.com/imod/resource-bundle-gen</url>
 	<properties>
 		<auto-service.version>1.0-rc2</auto-service.version>
 		<maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
 		<jdk.version>11</jdk.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<nexus.url>https://oss.sonatype.org</nexus.url>
+		<project.repository>imod/resource-bundle-gen</project.repository>
+		<repository.url>git@github.com:${project.repository}.git</repository.url>
 	</properties>
+	<licenses>
+		<license>
+			<name>Apache License 2.0</name>
+		</license>
+	</licenses>
+	<developers>
+		<developer>
+			<id>imod</id>
+			<name>Dominik Bartholdi</name>
+		</developer>
+	</developers>
+	<scm>
+		<connection>scm:git:${repository.url}</connection>
+		<developerConnection>scm:git:${repository.url}</developerConnection>
+		<url>${repository.url}</url>
+		<tag>HEAD</tag>
+	</scm>
+	<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>${nexus.url}/content/repositories/snapshots</url>
+		</snapshotRepository>
+		<repository>
+			<id>ossrh</id>
+			<url>${nexus.url}/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
+	<modules>
+		<module>resource-bundle-processor</module>
+		<module>resource-bundle-test</module>
+	</modules>
+
 	<build>
 		<pluginManagement>
 			<plugins>
@@ -36,5 +69,159 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-release-plugin</artifactId>
+				<version>3.0.0-M1</version>
+				<configuration>
+					<useReleaseProfile>false</useReleaseProfile>
+					<releaseProfiles>publication,gpg</releaseProfiles>
+					<autoVersionSubmodules>true</autoVersionSubmodules>
+					<tagNameFormat>v@{project.version}</tagNameFormat>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.8</version>
+				<extensions>true</extensions>
+				<configuration>
+					<serverId>central</serverId>
+					<nexusUrl>${nexus.url}</nexusUrl>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
+				</configuration>
+			</plugin>
+		</plugins>
 	</build>
+	<profiles>
+		<profile>
+			<id>publication</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>3.2.1</version>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+								<configuration>
+									<attach>true</attach>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.2.0</version>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+								<configuration>
+									<attach>true</attach>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>gpg</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>1.6</version>
+						<executions>
+							<execution>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+								<configuration>
+									<gpgArguments>
+										<arg>--pinentry-mode</arg>
+										<arg>loopback</arg>
+									</gpgArguments>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<!-- This profile can be used to publish all artifacts to a given directory, 
+				letting you inspect them before attempting a remote release -->
+			<!-- RUN: mvn -Ppublication,local-deploy -Dlocal.repository.path=/tmp/repository 
+				deploy -->
+			<id>local-deploy</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<distributionManagement>
+				<snapshotRepository>
+					<id>local-snapshot</id>
+					<url>file://${local.repository.path}/snapshot</url>
+				</snapshotRepository>
+				<repository>
+					<id>local-release</id>
+					<url>file://${local.repository.path}/release</url>
+				</repository>
+			</distributionManagement>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-clean-plugin</artifactId>
+						<inherited>false</inherited>
+						<configuration>
+							<filesets>
+								<fileset>
+									<directory>${local.repository.path}</directory>
+								</fileset>
+							</filesets>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<version>3.0.0</version>
+						<inherited>false</inherited>
+						<executions>
+							<execution>
+								<id>generate-repository-directories</id>
+								<phase>generate-sources</phase>
+								<configuration>
+									<target>
+										<mkdir dir="${local.repository.path}/snapshot" />
+										<mkdir dir="${local.repository.path}/release" />
+									</target>
+								</configuration>
+								<goals>
+									<goal>run</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
