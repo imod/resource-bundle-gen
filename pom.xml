@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.fortysix</groupId>
 	<artifactId>resource-bundle-gen</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.2</version>
 	<packaging>pom</packaging>
 	<name>Resource Bundle Generator</name>
 	<description>ResourceBundle Generator is a small Java Annotation Processor (JSR-269) generating a class to ease the access to java resource bundles.</description>
@@ -31,7 +31,7 @@
 		<connection>scm:git:${repository.url}</connection>
 		<developerConnection>scm:git:${repository.url}</developerConnection>
 		<url>${repository.url}</url>
-		<tag>HEAD</tag>
+		<tag>v0.0.2</tag>
 	</scm>
 	<distributionManagement>
 		<snapshotRepository>
