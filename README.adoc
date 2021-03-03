@@ -45,7 +45,7 @@ In this case, the generated class will depend on `org.apache.commons.text.String
 
 ## Example
 
-Take the following resource bundle file:
+Take the following resource bundle file (`ch/fortysix/test/messages.properties`):
 
 ```
 somekey=Some text
