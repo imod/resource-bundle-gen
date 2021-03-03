@@ -1,3 +1,4 @@
+# Release build is based on https://andresalmiray.com/publishing-to-maven-central-using-apache-maven/
 name: Release
 
 on:
