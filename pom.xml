@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ch.fortysix</groupId>
 	<artifactId>resource-bundle-gen</artifactId>
@@ -45,7 +46,6 @@
 	</distributionManagement>
 	<modules>
 		<module>resource-bundle-processor</module>
-		<module>resource-bundle-test</module>
 	</modules>
 
 	<build>
@@ -74,7 +74,7 @@
 				<version>3.0.0-M1</version>
 				<configuration>
 					<useReleaseProfile>false</useReleaseProfile>
-					<releaseProfiles>publication,gpg</releaseProfiles>
+					<releaseProfiles>publication,gpg,!test-module</releaseProfiles>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<tagNameFormat>v@{project.version}</tagNameFormat>
 				</configuration>
@@ -93,6 +93,15 @@
 		</plugins>
 	</build>
 	<profiles>
+		<profile>
+			<id>test-module</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<modules>
+				<module>resource-bundle-test</module>
+			</modules>
+		</profile>
 		<profile>
 			<id>publication</id>
 			<activation>
@@ -165,9 +174,9 @@
 			</build>
 		</profile>
 		<profile>
-			<!-- This profile can be used to publish all artifacts to a given directory, 
+			<!-- This profile can be used to publish all artifacts to a given directory,
 				letting you inspect them before attempting a remote release -->
-			<!-- RUN: mvn -Ppublication,local-deploy -Dlocal.repository.path=/tmp/repository 
+			<!-- RUN: mvn -Ppublication,local-deploy,\!test-module -Dlocal.repository.path=/tmp/repository
 				deploy -->
 			<id>local-deploy</id>
 			<activation>
