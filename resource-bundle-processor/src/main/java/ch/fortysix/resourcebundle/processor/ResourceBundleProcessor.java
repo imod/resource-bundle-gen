@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
@@ -32,6 +33,7 @@ import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.text.CaseUtils;
 
@@ -59,23 +61,13 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 				TypeElement bundleClass = (TypeElement) bundleClassElement;
 
 				ResourceBundle bundleAnnotation = bundleClass.getAnnotation(ResourceBundle.class);
-				String bundleName = bundleAnnotation.bundle();
 				ResourceBundleImplementationType type = bundleAnnotation.type();
 
-				// build the file name of the bundle name, we currently only support properties
-				// files
-				String bundleFileName = bundleName.replace(".properties", "").replace('.', '/').concat(".properties");
-
 				try {
-					messager.printMessage(Kind.NOTE, "generating Message class for " + bundleName, bundleClass);
+					messager.printMessage(Kind.NOTE, "generating Message class for " + bundleAnnotation.bundle(),
+							bundleClass);
 					// load the bundle/properties file
-					FileObject fileObject = this.processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "",
-							bundleFileName);
-
-					Properties props = new Properties();
-					try (InputStream inputStream = fileObject.openInputStream()) {
-						props.load(inputStream);
-					}
+					Properties props = loadBundleMessages(bundleAnnotation);
 					Set<Entry<Object, Object>> propertiesEntries = props.entrySet();
 
 					Map<String, List<String>> methodDefinitions = new HashMap<>();
@@ -85,7 +77,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 						methodDefinitions.put(String.valueOf(entry.getKey()), arguments);
 					}
 
-					writeMessagesJavaFile(type, bundleName, bundleClass.getQualifiedName().toString(),
+					writeMessagesJavaFile(type, bundleAnnotation.bundle(), bundleClass.getQualifiedName().toString(),
 							bundleAnnotation.suffix(), methodDefinitions);
 				} catch (IOException e1) {
 					e1.printStackTrace();
@@ -96,6 +88,33 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 		}
 
 		return true;
+	}
+
+	private Properties loadBundleMessages(ResourceBundle bundleAnnotation) throws IOException {
+		Properties props = new Properties();
+
+		String[] filesToAnalyse = bundleAnnotation.filesToAnalyse();
+		if (ArrayUtils.isNotEmpty(filesToAnalyse)) {
+			for (String bundleFileName : filesToAnalyse) {
+				loadProperties(props, bundleFileName);
+			}
+		} else {
+			String bundleName = bundleAnnotation.bundle();
+
+			// build the file name of the bundle name, we currently only support properties
+			// files
+			String bundleFileName = bundleName.replace(".properties", "").replace('.', '/').concat(".properties");
+			loadProperties(props, bundleFileName);
+		}
+		return props;
+	}
+
+	private void loadProperties(Properties props, String bundleFileName) throws IOException {
+		FileObject fileObject = this.processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "",
+				bundleFileName);
+		try (InputStream inputStream = fileObject.openInputStream()) {
+			props.load(inputStream);
+		}
 	}
 
 	private void writeMessagesJavaFile(ResourceBundleImplementationType type, String bundleName, String className,
@@ -125,6 +144,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 			out.println("import java.util.HashMap;");
 			out.println("import java.util.Locale;");
 			out.println("import java.util.Map;");
+			out.println("import java.util.MissingResourceException;");
 			out.println("import java.util.ResourceBundle;");
 			out.println("import java.util.concurrent.ConcurrentHashMap;");
 			out.println();
@@ -169,7 +189,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 	private void commonsTextMethod(PrintWriter out, String key, List<String> arguments) {
 		String methodName = RegExUtils.removeAll(CaseUtils.toCamelCase(key, false, '_', '.'), "([\\.|_])");
 
-		out.print("    public java.lang.String ");
+		out.print("    public String ");
 		out.print(methodName);
 
 		out.print("(");
@@ -177,7 +197,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 		Iterator<String> argsIterator = arguments.iterator();
 		while (argsIterator.hasNext()) {
 			String arg = argsIterator.next();
-			out.print(", String ");
+			out.print(", Object ");
 			out.print(arg);
 		}
 		out.println(") {");
@@ -187,13 +207,17 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 			out.println("    }");
 			out.println();
 		} else {
-			out.println("		String messagePattern = holder.getBundle(locale).getString(\"" + key + "\");");
-			out.println("		Map<String, String> values = new HashMap<>();");
+			out.println("		try {");
+			out.println("			String messagePattern = holder.getBundle(locale).getString(\"" + key + "\");");
+			out.println("			Map<String, Object> values = new HashMap<>();");
 			for (String arg : arguments) {
-				out.println("		values.put(\"" + arg + "\", " + arg + ");");
+				out.println("			values.put(\"" + arg + "\", " + arg + ");");
 			}
-			out.println("		StringSubstitutor sub = new StringSubstitutor(values, \"{\", \"}\");");
-			out.println("		return sub.replace(messagePattern);");
+			out.println("			StringSubstitutor sub = new StringSubstitutor(values, \"{\", \"}\");");
+			out.println("			return sub.replace(messagePattern);");
+			out.println("		} catch (MissingResourceException e) {");
+			out.println("			return \"[" + key + "]\";");
+			out.println("		}");
 			out.println("    }");
 			out.println();
 		}
@@ -203,7 +227,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 		// build the method name out of the message key
 		String methodName = RegExUtils.removeAll(CaseUtils.toCamelCase(key, false, '_', '.'), "([\\.|_])");
 
-		out.print("    public java.lang.String ");
+		out.print("    public String ");
 		out.print(methodName);
 
 		out.print("(");
@@ -211,7 +235,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 		Iterator<String> argsIterator = arguments.iterator();
 		while (argsIterator.hasNext()) {
 			String arg = argsIterator.next();
-			out.print(", String ");
+			out.print(", Object ");
 			out.print(arg);
 		}
 		out.println(") {");
@@ -221,8 +245,12 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 			out.println("    }");
 			out.println();
 		} else {
-			out.println("		String messagePattern = holder.getBundle(locale).getString(\"" + key + "\");");
-			out.println("		return MessageFormat.format(messagePattern, " + buildArgList(arguments) + ");");
+			out.println("		try {");
+			out.println("			String messagePattern = holder.getBundle(locale).getString(\"" + key + "\");");
+			out.println("			return MessageFormat.format(messagePattern, " + buildArgList(arguments) + ");");
+			out.println("		} catch (MissingResourceException e) {");
+			out.println("			return \"[" + key + "]\";");
+			out.println("		}");
 			out.println("    }");
 			out.println();
 		}
@@ -233,7 +261,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 		// 1. try to count how many arguments with the pattern {N} are in the value
 		int nrOfArguments = (input.split("(\\{\\d\\})", -1).length - 1);
 		if (nrOfArguments > 0) {
-			return IntStream.rangeClosed(1, nrOfArguments).mapToObj(i -> "arg" + i).collect(Collectors.toList());
+			return IntStream.rangeClosed(1, nrOfArguments).mapToObj(i -> "arg" + (i-1)).collect(Collectors.toList());
 		}
 
 		// 2. try to resolve argument names following the pattern {name} are in the
