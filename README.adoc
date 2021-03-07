@@ -73,14 +73,14 @@ Will generate this:
 ```java
 public class ApplicationMessages {
 
-	private static final class Holder {
-		private static final String BUNDLE_NAME = "ch.fortysix.test.messages";
-		private Map<Locale, ResourceBundle> bundles = new ConcurrentHashMap<>();
+    private static final class Holder {
+      private static final String BUNDLE_NAME = "ch.fortysix.test.messages";
+      private Map<Locale, ResourceBundle> bundles = new ConcurrentHashMap<>();
 
-		public ResourceBundle getBundle(Locale locale) {
-			return bundles.computeIfAbsent(locale, l -> ResourceBundle.getBundle(BUNDLE_NAME, l));
-		}
-	}
+      public ResourceBundle getBundle(Locale locale) {
+        return bundles.computeIfAbsent(locale, l -> ResourceBundle.getBundle(BUNDLE_NAME, l));
+      }
+    }
 
     private Holder holder = new Holder();
 
