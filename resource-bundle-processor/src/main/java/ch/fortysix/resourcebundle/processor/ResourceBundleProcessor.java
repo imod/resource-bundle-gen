@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.MissingResourceException;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
@@ -157,15 +156,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 			out.println(" {");
 			out.println();
 
-			out.println("	private static final class Holder {");
-			out.println("		private static final String BUNDLE_NAME = \"" + bundleName + "\";");
-			out.println("		private Map<Locale, ResourceBundle> bundles = new ConcurrentHashMap<>();");
-			out.println();
-			out.println("		public ResourceBundle getBundle(Locale locale) {");
-			out.println(
-					"			return bundles.computeIfAbsent(locale, l -> ResourceBundle.getBundle(BUNDLE_NAME, l));");
-			out.println("		}");
-			out.println("	}");
+			printHolder(bundleName, out);
 
 			out.println();
 			out.println("	private Holder holder = new Holder();");
@@ -186,8 +177,20 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 
 	}
 
-	private void commonsTextMethod(PrintWriter out, String key, List<String> arguments) {
-		String methodName = RegExUtils.removeAll(CaseUtils.toCamelCase(key, false, '_', '.'), "([\\.|_])");
+	private void printHolder(String bundleName, PrintWriter out) {
+		out.println("	private static final class Holder {");
+		out.println("		private static final String BUNDLE_NAME = \"" + bundleName + "\";");
+		out.println("		private Map<Locale, ResourceBundle> bundles = new ConcurrentHashMap<>();");
+		out.println();
+		out.println("		public ResourceBundle getBundle(Locale locale) {");
+		out.println(
+				"			return bundles.computeIfAbsent(locale, l -> ResourceBundle.getBundle(BUNDLE_NAME, l));");
+		out.println("		}");
+		out.println("	}");
+	}
+
+	private void commonsTextMethod(PrintWriter out, String messageKey, List<String> arguments) {
+		String methodName = RegExUtils.removeAll(CaseUtils.toCamelCase(messageKey, false, '_', '.'), "([\\.|_])");
 
 		out.print("    public String ");
 		out.print(methodName);
@@ -202,13 +205,17 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 		}
 		out.println(") {");
 
-		if (arguments.size() == 0) {
-			out.println("		return holder.getBundle(locale).getString(\"" + key + "\");");
-			out.println("    }");
-			out.println();
+		if (arguments.isEmpty()) {
+			out.println("		try {");
+			out.println("			return holder.getBundle(locale).getString(\"" + messageKey + "\");");
+			out.println("		} catch (MissingResourceException e) {");
+			out.println("			return \"[" + messageKey + "]\";");
+			out.println("		}");
 		} else {
 			out.println("		try {");
-			out.println("			String messagePattern = holder.getBundle(locale).getString(\"" + key + "\");");
+			out.println(
+					"			String messagePattern = holder.getBundle(locale).getString(\"" + messageKey + "\");");
+
 			out.println("			Map<String, Object> values = new HashMap<>();");
 			for (String arg : arguments) {
 				out.println("			values.put(\"" + arg + "\", " + arg + ");");
@@ -216,16 +223,17 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 			out.println("			StringSubstitutor sub = new StringSubstitutor(values, \"{\", \"}\");");
 			out.println("			return sub.replace(messagePattern);");
 			out.println("		} catch (MissingResourceException e) {");
-			out.println("			return \"[" + key + "]\";");
+			out.println("			return \"[" + messageKey + "]\";");
 			out.println("		}");
-			out.println("    }");
-			out.println();
 		}
+
+		out.println("    }");
+		out.println();
 	}
 
-	private void javaLangMethod(PrintWriter out, String key, List<String> arguments) {
+	private void javaLangMethod(PrintWriter out, String messageKey, List<String> arguments) {
 		// build the method name out of the message key
-		String methodName = RegExUtils.removeAll(CaseUtils.toCamelCase(key, false, '_', '.'), "([\\.|_])");
+		String methodName = RegExUtils.removeAll(CaseUtils.toCamelCase(messageKey, false, '_', '.'), "([\\.|_])");
 
 		out.print("    public String ");
 		out.print(methodName);
@@ -240,35 +248,38 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 		}
 		out.println(") {");
 
-		if (arguments.size() == 0) {
-			out.println("		return holder.getBundle(locale).getString(\"" + key + "\");");
-			out.println("    }");
-			out.println();
+		if (arguments.isEmpty()) {
+			out.println("		try {");
+			out.println("			return holder.getBundle(locale).getString(\"" + messageKey + "\");");
+			out.println("		} catch (MissingResourceException e) {");
+			out.println("			return \"[" + messageKey + "]\";");
+			out.println("		}");
 		} else {
 			out.println("		try {");
-			out.println("			String messagePattern = holder.getBundle(locale).getString(\"" + key + "\");");
+			out.println(
+					"			String messagePattern = holder.getBundle(locale).getString(\"" + messageKey + "\");");
 			out.println("			return MessageFormat.format(messagePattern, " + buildArgList(arguments) + ");");
 			out.println("		} catch (MissingResourceException e) {");
-			out.println("			return \"[" + key + "]\";");
+			out.println("			return \"[" + messageKey + "]\";");
 			out.println("		}");
-			out.println("    }");
-			out.println();
 		}
+
+		out.println("    }");
+		out.println();
 	}
 
-	private List<String> getArguments(String input) {
+	private List<String> getArguments(String messageValue) {
 
 		// 1. try to count how many arguments with the pattern {N} are in the value
-		int nrOfArguments = (input.split("(\\{\\d\\})", -1).length - 1);
+		int nrOfArguments = (messageValue.split("(\\{\\d\\})", -1).length - 1);
 		if (nrOfArguments > 0) {
-			return IntStream.rangeClosed(1, nrOfArguments).mapToObj(i -> "arg" + (i-1)).collect(Collectors.toList());
+			return IntStream.rangeClosed(1, nrOfArguments).mapToObj(i -> "arg" + (i - 1)).collect(Collectors.toList());
 		}
 
-		// 2. try to resolve argument names following the pattern {name} are in the
-		// value
+		// 2. try to resolve argument names with the pattern "{someName}" in the value
 		List<String> arguments = new ArrayList<>();
 		Pattern argPattern = Pattern.compile("\\{(\\w+)\\}");
-		Matcher matcher = argPattern.matcher(input);
+		Matcher matcher = argPattern.matcher(messageValue);
 		while (matcher.find()) {
 			arguments.add(matcher.group(1));
 		}

@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>ch.fortysix</groupId>
@@ -7,8 +9,12 @@
 	</parent>
 	<artifactId>resource-bundle-processor</artifactId>
 	<name>resource-bundle-processor</name>
-
 	<dependencies>
+		<dependency>
+			<artifactId>resource-bundle-annotation</artifactId>
+			<groupId>ch.fortysix</groupId>
+			<version>${project.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>com.google.auto.service</groupId>
 			<artifactId>auto-service</artifactId>

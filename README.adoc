@@ -1,25 +1,28 @@
-# ResourceBundle Generator
+# ResourceBundle Processor
 
-ResourceBundle Generator is a small Java Annotation Processor (JSR-269) generating a class to ease the access to java resource bundles.
+ResourceBundle Processor is a small Java Annotation Processor (JSR-269) generating a class to ease the access to java resource bundles.
 
 ## What does it do?
 
-The generator will read generate a class with a method for each key in the given resource bundle (the default bundle). If the message is a `java.text.MessageFormat`, the method will have arguments to pass the values for the format.
+The processor will generate a class with a method for each key in the given resource bundle. If the message contains placeholders, the method will have arguments to pass the values for each argument. The final message will be formated with a `java.text.MessageFormat`.
 
-e.g. `say.hi=Hello {0} {1}` will generate the following method signature:
+e.g.
 
-```
+`say.hi=Hello {0} {1}` will generate the following method signature:
+
+```java
 public String sayHi(Locale locale, String arg0, String arg1)
 ```
 
 _Note:_ Per default, the 'default bundle' file will be used to determine all the available keys and messages.
 If the 'default bundle' does not hold all the messages which should be made available within the final class,
-you can define all the files which should be used to find keys and messages in `filesToAnalyse` of `@ResourceBundle`.
+you can define all the files which should be used to find keys and messages in `filesToAnalyse` of `@ResourceBundle` (see <<Configuration>>).
 
-## Why
+## Advantages
 
-- no message/bundle keys distributed all over the source code.
-- have the compiler check the number of arguments passed to `MessageFormat.format(..)`
+- No message/bundle keys distributed all over the source code.
+- Have the compiler check the number of arguments passed to `MessageFormat.format(..)`.
+- Source of the generated class is available and you can step through with any debugger.
 
 ## Named arguments
 
@@ -33,13 +36,13 @@ Bundle content: `say.by=By {firstName} {lastName}`
 
 will generate the following method signature:
 
-```
+```java
 public String sayBy(Locale locale, String firstName, String lastName)
 ```
 
 In this case, the generated class will depend on `org.apache.commons.text.StringSubstitutor` of `commons-text`, therefore you need to add the following dependency to you project:
 
-```
+```xml
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-text</artifactId>
@@ -51,7 +54,7 @@ In this case, the generated class will depend on `org.apache.commons.text.String
 
 Take the following resource bundle file (`ch/fortysix/test/messages.properties`):
 
-```
+```txt
 somekey=Some text
 say.hi=Hello {0}
 say_by=By {0} {1}
@@ -59,7 +62,7 @@ say_by=By {0} {1}
 
 Annotating a class with `@ResourceBundle` e.g.:
 
-```
+```java
 @ResourceBundle(bundle = "ch.fortysix.test.messages", suffix = "Messages")
 public class Application {
 }
@@ -67,7 +70,7 @@ public class Application {
 
 Will generate this:
 
-```
+```java
 public class ApplicationMessages {
 
 	private static final class Holder {
@@ -81,28 +84,68 @@ public class ApplicationMessages {
 
     private Holder holder = new Holder();
 
-    public java.lang.String somekey(Locale locale) {
-		return holder.getBundle(locale).getString("somekey");
+    public String somekey(Locale locale) {
+      try {
+        return holder.getBundle(locale).getString("somekey");
+      } catch (MissingResourceException e) {
+        return "[somekey]";
+      }
     }
 
-    public java.lang.String sayHi(Locale locale, String arg1) {
-		String messagePattern = holder.getBundle(locale).getString("say.hi");
-		return MessageFormat.format(messagePattern, arg1);
+    public String sayHi(Locale locale, String arg1) {
+      try {
+        String messagePattern = holder.getBundle(locale).getString("say.hi");
+        return MessageFormat.format(messagePattern, arg1);
+      } catch (MissingResourceException e) {
+        return "[say.hi]";
+      }
     }
 
-    public java.lang.String sayBy(Locale locale, String arg1, String arg2) {
-		String messagePattern = holder.getBundle(locale).getString("say_by");
-		return MessageFormat.format(messagePattern, arg1, arg2);
+    public String sayBy(Locale locale, String arg1, String arg2) {
+      try {
+        String messagePattern = holder.getBundle(locale).getString("say_by");
+        return MessageFormat.format(messagePattern, arg1, arg2);
+      } catch (MissingResourceException e) {
+        return "[say_by]";
+      }
     }
-
 }
 ```
 
-## Maven
+## Configuration
 
-To make the annotation processor work, you need to include it in your compiler configuration:
+### Annotation
 
+`@ResourceBundle` takes the following properties
+
+|=======================
+|  property |  default | description
+| bundle | | The name of the resource bundle. If the (properties) files are located within a package, you need to define the qualified name, but without the extension. e.g. `ch.fortysix.test.mybundle`
+| type  | JDK | - `JDK`: Generates the implementation based on the Java JDK only, no other dependencies are needed at runtime. Note: this implementation can not ensure the order of the arguments passed to MessageFormat is correct.
+
+- `COMMONS_TEXT`: Generates the implementation based on apache commons-text, supporting named arguments within the message. If you choose this type, you also need to add org.apache.commons:commons-text as a dependency to your project.
+| suffix | Bundle | The suffix to be added to the generated class. Base name is the name of the class this annotation is set on.
+| filesToAnalyse |   | Per default, the default bundle file will be used to determine all the available keys and messages. If the default bundle does not hold all the messages which should be made available within the final class, you can add all the files which should be used to find keys and messages here.
+|=======================
+
+### Dependency
+
+To get `@ResourceBundle` available during compilation, you need add the dependency to `ch.fortysix:resource-bundle-annotation`. This is dependency is not required a runtime.
+
+```xml
+		<dependency>
+			<artifactId>resource-bundle-annotation</artifactId>
+			<groupId>ch.fortysix</groupId>
+			<version>${latest.version}</version>
+			<optional>true</optional>
+		</dependency>
 ```
+
+### Processor
+
+To make the annotation processor/code generation work, you need to extend the compiler configuration:
+
+```xml
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-compiler-plugin</artifactId>
@@ -114,7 +157,7 @@ To make the annotation processor work, you need to include it in your compiler c
             <path>
                 <groupId>ch.fortysix</groupId>
                 <artifactId>resource-bundle-processor</artifactId>
-                <version>${project.version}</version>
+                <version>${latest.version}</version>
             </path>
         </annotationProcessorPaths>
     </configuration>
@@ -125,7 +168,7 @@ To make the annotation processor work, you need to include it in your compiler c
 
 - A annotation processor is only  triggered in case a java file changes, but the resource bundles actually are `properties`-files (XML is currenlty not supported),
 therefore a compilation of the java class annotated with `@ResourceBundle` might need to be triggered in case the bunlde file changes.
-e.g. `mvn clean verify`
+e.g. `mvn clean compile`
 - The current version only supports resource bundles in the form of properties files (no XML).
 
 ## Alternatives
