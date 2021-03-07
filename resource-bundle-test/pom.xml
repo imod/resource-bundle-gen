@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>ch.fortysix</groupId>
 		<artifactId>resource-bundle-gen</artifactId>
-		<version>0.0.3</version>
+		<version>0.0.4-SNAPSHOT</version>
 	</parent>
 	<artifactId>resource-bundle-test</artifactId>
 	<name>resource-bundle-test</name>
