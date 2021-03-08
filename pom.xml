@@ -5,7 +5,7 @@
 	<version>0.0.4-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>Resource Bundle Generator</name>
-	<description>ResourceBundle Generator is a small Java Annotation Processor (JSR-269) generating a class to ease the access to java resource bundles.</description>
+	<description>ResourceBundle Processor is a small Java Annotation Processor (JSR-269) generating a class to ease the access to java resource bundles.</description>
 	<url>https://github.com/imod/resource-bundle-gen</url>
 	<properties>
 		<auto-service.version>1.0-rc2</auto-service.version>

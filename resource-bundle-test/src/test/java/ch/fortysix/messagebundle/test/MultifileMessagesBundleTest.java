@@ -14,18 +14,18 @@ class MultifileMessagesBundleTest {
 
 	@Test
 	void testNoArgument() {
-		assertEquals("dummyvalue", bundle.dummy(Locale.ENGLISH));
+		assertEquals("dummyvalue", bundle.getDummy(Locale.ENGLISH));
 	}
 
 	@Test
 	void testWithOneArgument() {
-		assertEquals("deutscher wert Welt", bundle.messageFromDeFile(Locale.GERMAN, "Welt"));
-		assertEquals("english value World", bundle.messageFromEnFile(Locale.ENGLISH, "World"));
+		assertEquals("deutscher wert Welt", bundle.getMessageFromDeFile(Locale.GERMAN, "Welt"));
+		assertEquals("english value World", bundle.getMessageFromEnFile(Locale.ENGLISH, "World"));
 	}
 
 	@Test
 	void testMissingMessageResource() {
-		assertEquals("[message.from.de.file]", bundle.messageFromDeFile(Locale.ENGLISH, "Welt"));
+		assertEquals("[message.from.de.file]", bundle.getMessageFromDeFile(Locale.ENGLISH, "Welt"));
 	}
 
 }

@@ -72,7 +72,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 					Map<String, List<String>> methodDefinitions = new HashMap<>();
 
 					for (Entry<Object, Object> entry : propertiesEntries) {
-						List<String> arguments = getArguments((String) entry.getValue());
+						List<String> arguments = buildArguments((String) entry.getValue());
 						methodDefinitions.put(String.valueOf(entry.getKey()), arguments);
 					}
 
@@ -190,7 +190,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 	}
 
 	private void commonsTextMethod(PrintWriter out, String messageKey, List<String> arguments) {
-		String methodName = RegExUtils.removeAll(CaseUtils.toCamelCase(messageKey, false, '_', '.'), "([\\.|_])");
+		String methodName = buildMethodName(messageKey);
 
 		out.print("    public String ");
 		out.print(methodName);
@@ -201,7 +201,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 		while (argsIterator.hasNext()) {
 			String arg = argsIterator.next();
 			out.print(", Object ");
-			out.print(arg);
+			out.print(arg + "Arg");
 		}
 		out.println(") {");
 
@@ -218,7 +218,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 
 			out.println("			Map<String, Object> values = new HashMap<>();");
 			for (String arg : arguments) {
-				out.println("			values.put(\"" + arg + "\", " + arg + ");");
+				out.println("			values.put(\"" + arg + "\", " + arg + "Arg);");
 			}
 			out.println("			StringSubstitutor sub = new StringSubstitutor(values, \"{\", \"}\");");
 			out.println("			return sub.replace(messagePattern);");
@@ -233,7 +233,7 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 
 	private void javaLangMethod(PrintWriter out, String messageKey, List<String> arguments) {
 		// build the method name out of the message key
-		String methodName = RegExUtils.removeAll(CaseUtils.toCamelCase(messageKey, false, '_', '.'), "([\\.|_])");
+		String methodName = buildMethodName(messageKey);
 
 		out.print("    public String ");
 		out.print(methodName);
@@ -268,7 +268,11 @@ public class ResourceBundleProcessor extends AbstractProcessor {
 		out.println();
 	}
 
-	private List<String> getArguments(String messageValue) {
+	private String buildMethodName(String messageKey) {
+		return "get" + RegExUtils.removeAll(CaseUtils.toCamelCase(messageKey, true, '_', '.'), "([\\.|_])");
+	}
+
+	private List<String> buildArguments(String messageValue) {
 
 		// 1. try to count how many arguments with the pattern {N} are in the value
 		int nrOfArguments = (messageValue.split("(\\{\\d\\})", -1).length - 1);

@@ -14,20 +14,20 @@ class ApplicationMessagesTest {
 
 	@Test
 	void testNoArgument() {
-		assertEquals("secondvalue", messages.anotherkey(Locale.ENGLISH));
-		assertEquals("zweiter wert", messages.anotherkey(Locale.GERMAN));
+		assertEquals("secondvalue", messages.getAnotherkey(Locale.ENGLISH));
+		assertEquals("zweiter wert", messages.getAnotherkey(Locale.GERMAN));
 	}
 
 	@Test
 	void testWithOneArgument() {
-		assertEquals("Hello World", messages.keyWithDots(Locale.ENGLISH, "World"));
-		assertEquals("Hallo Welt", messages.keyWithDots(Locale.GERMAN, "Welt"));
+		assertEquals("Hello World", messages.getKeyWithDots(Locale.ENGLISH, "World"));
+		assertEquals("Hallo Welt", messages.getKeyWithDots(Locale.GERMAN, "Welt"));
 	}
 
 	@Test
 	void testWithThreeArgument() {
-		assertEquals("one sometext two three", messages.keyWithUnderlines(Locale.ENGLISH, "one", "two", "three"));
-		assertEquals("eins ein text zwei drei", messages.keyWithUnderlines(Locale.GERMAN, "eins", "zwei", "drei"));
+		assertEquals("one sometext two three", messages.getKeyWithUnderlines(Locale.ENGLISH, "one", "two", "three"));
+		assertEquals("eins ein text zwei drei", messages.getKeyWithUnderlines(Locale.GERMAN, "eins", "zwei", "drei"));
 	}
 
 }
